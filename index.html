@@ -6,12 +6,90 @@
     <title>PIXEL BLACKJACK ♠ Arcade Casino</title>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🃏</text></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-    <div class="game-container">
+    <!-- Auth Screen (Splash) -->
+    <div class="auth-screen" id="auth-screen">
+        <div class="auth-container">
+            <!-- Decorative cards -->
+            <div class="floating-cards">
+                <span class="float-card">♠</span>
+                <span class="float-card">♥</span>
+                <span class="float-card">♦</span>
+                <span class="float-card">♣</span>
+            </div>
+            
+            <div class="auth-logo">
+                <h1 class="pixel-text auth-title">PIXEL</h1>
+                <h1 class="pixel-text auth-title accent">BLACKJACK</h1>
+                <div class="auth-subtitle pixel-text">♠ ARCADE CASINO ♠</div>
+            </div>
+
+            <div class="auth-box">
+                <div class="auth-tabs">
+                    <button class="auth-tab active pixel-text" id="signin-tab">SIGN IN</button>
+                    <button class="auth-tab pixel-text" id="signup-tab">SIGN UP</button>
+                </div>
+
+                <!-- Sign In Form -->
+                <form class="auth-form" id="signin-form">
+                    <div class="input-group">
+                        <label class="pixel-text">EMAIL</label>
+                        <input type="email" id="signin-email" required placeholder="player@casino.com">
+                    </div>
+                    <div class="input-group">
+                        <label class="pixel-text">PASSWORD</label>
+                        <input type="password" id="signin-password" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="auth-btn pixel-btn">ENTER CASINO</button>
+                </form>
+
+                <!-- Sign Up Form -->
+                <form class="auth-form hidden" id="signup-form">
+                    <div class="input-group">
+                        <label class="pixel-text">DISPLAY NAME</label>
+                        <input type="text" id="signup-name" required placeholder="HighRoller99">
+                    </div>
+                    <div class="input-group">
+                        <label class="pixel-text">EMAIL</label>
+                        <input type="email" id="signup-email" required placeholder="player@casino.com">
+                    </div>
+                    <div class="input-group">
+                        <label class="pixel-text">PASSWORD</label>
+                        <input type="password" id="signup-password" required minlength="6" placeholder="Min 6 characters">
+                    </div>
+                    <button type="submit" class="auth-btn pixel-btn signup-btn">CREATE ACCOUNT</button>
+                    <div class="signup-bonus pixel-text">🎁 GET $1000 FREE CHIPS!</div>
+                </form>
+
+                <div class="auth-error pixel-text" id="auth-error"></div>
+
+                <div class="auth-divider">
+                    <span class="pixel-text">OR</span>
+                </div>
+
+                <button class="guest-btn pixel-btn" id="guest-btn">PLAY AS GUEST</button>
+                <div class="guest-note pixel-text">Progress won't be saved</div>
+            </div>
+
+            <div class="auth-footer pixel-text">
+                ♠ ♥ ♦ ♣
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Container -->
+    <div class="game-container hidden" id="game-container">
         <!-- Header with neon-style title -->
         <div class="header">
-            <h1 class="pixel-text">PIXEL BLACKJACK</h1>
+            <div class="header-top">
+                <h1 class="pixel-text">PIXEL BLACKJACK</h1>
+                <div class="user-profile" id="user-profile">
+                    <span class="user-name pixel-text" id="user-name">Guest</span>
+                    <button class="logout-btn pixel-btn" id="logout-btn">EXIT</button>
+                </div>
+            </div>
             <div class="stats">
                 <div class="stat-item pixel-text">💰 $<span id="balance">1000</span></div>
                 <div class="stat-item pixel-text">🎮 <span id="games-played">0</span></div>
@@ -97,6 +175,7 @@
         </div>
     </div>
 
+    <script src="config.js"></script>
     <script src="game.js"></script>
 </body>
 </html>

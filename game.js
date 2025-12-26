@@ -1,19 +1,333 @@
-// Pixel Blackjack - Professional Edition
-class BlackjackGame {
+// Pixel Blackjack - Professional Edition with Supabase Auth
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUPABASE CLIENT
+// ═══════════════════════════════════════════════════════════════════════════
+
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AUTH MANAGER
+// ═══════════════════════════════════════════════════════════════════════════
+
+class AuthManager {
     constructor() {
+        this.user = null;
+        this.isGuest = false;
+        this.userStats = null;
+        
+        // DOM Elements
+        this.authScreen = document.getElementById('auth-screen');
+        this.gameContainer = document.getElementById('game-container');
+        this.signinForm = document.getElementById('signin-form');
+        this.signupForm = document.getElementById('signup-form');
+        this.signinTab = document.getElementById('signin-tab');
+        this.signupTab = document.getElementById('signup-tab');
+        this.authError = document.getElementById('auth-error');
+        this.guestBtn = document.getElementById('guest-btn');
+        this.logoutBtn = document.getElementById('logout-btn');
+        this.userNameEl = document.getElementById('user-name');
+        
+        this.init();
+    }
+    
+    async init() {
+        this.setupEventListeners();
+        await this.checkExistingSession();
+    }
+    
+    setupEventListeners() {
+        // Tab switching
+        this.signinTab.addEventListener('click', () => this.switchTab('signin'));
+        this.signupTab.addEventListener('click', () => this.switchTab('signup'));
+        
+        // Form submissions
+        this.signinForm.addEventListener('submit', (e) => this.handleSignIn(e));
+        this.signupForm.addEventListener('submit', (e) => this.handleSignUp(e));
+        
+        // Guest mode
+        this.guestBtn.addEventListener('click', () => this.playAsGuest());
+        
+        // Logout
+        this.logoutBtn.addEventListener('click', () => this.handleLogout());
+    }
+    
+    switchTab(tab) {
+        this.authError.textContent = '';
+        
+        if (tab === 'signin') {
+            this.signinTab.classList.add('active');
+            this.signupTab.classList.remove('active');
+            this.signinForm.classList.remove('hidden');
+            this.signupForm.classList.add('hidden');
+        } else {
+            this.signupTab.classList.add('active');
+            this.signinTab.classList.remove('active');
+            this.signupForm.classList.remove('hidden');
+            this.signinForm.classList.add('hidden');
+        }
+    }
+    
+    async checkExistingSession() {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            if (session) {
+                this.user = session.user;
+                await this.loadUserStats();
+                this.showGame();
+            }
+        } catch (error) {
+            console.error('Session check error:', error);
+        }
+    }
+    
+    async handleSignIn(e) {
+        e.preventDefault();
+        this.authError.textContent = '';
+        
+        const email = document.getElementById('signin-email').value;
+        const password = document.getElementById('signin-password').value;
+        
+        try {
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password
+            });
+            
+            if (error) throw error;
+            
+            this.user = data.user;
+            await this.loadUserStats();
+            this.showGame();
+            
+        } catch (error) {
+            this.authError.textContent = error.message || 'Sign in failed';
+        }
+    }
+    
+    async handleSignUp(e) {
+        e.preventDefault();
+        this.authError.textContent = '';
+        
+        const displayName = document.getElementById('signup-name').value;
+        const email = document.getElementById('signup-email').value;
+        const password = document.getElementById('signup-password').value;
+        
+        try {
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        display_name: displayName
+                    }
+                }
+            });
+            
+            if (error) throw error;
+            
+            // Check if email confirmation is required
+            if (data.user && !data.session) {
+                this.authError.style.color = '#4ade80';
+                this.authError.textContent = 'Check your email to confirm your account!';
+                return;
+            }
+            
+            this.user = data.user;
+            await this.createUserStats(displayName, email);
+            this.showGame();
+            
+        } catch (error) {
+            this.authError.textContent = error.message || 'Sign up failed';
+        }
+    }
+    
+    async createUserStats(displayName, email) {
+        try {
+            const { error } = await supabase
+                .from('user_stats')
+                .insert({
+                    id: this.user.id,
+                    email: email,
+                    display_name: displayName,
+                    balance: 1000,
+                    games_played: 0,
+                    wins: 0,
+                    blackjacks: 0,
+                    biggest_win: 0
+                });
+            
+            if (error) throw error;
+            
+            this.userStats = {
+                balance: 1000,
+                games_played: 0,
+                wins: 0,
+                blackjacks: 0,
+                biggest_win: 0,
+                display_name: displayName
+            };
+            
+        } catch (error) {
+            console.error('Error creating user stats:', error);
+            // Stats might already exist, try loading them
+            await this.loadUserStats();
+        }
+    }
+    
+    async loadUserStats() {
+        try {
+            const { data, error } = await supabase
+                .from('user_stats')
+                .select('*')
+                .eq('id', this.user.id)
+                .single();
+            
+            if (error) {
+                // If no stats exist, create them
+                if (error.code === 'PGRST116') {
+                    const displayName = this.user.user_metadata?.display_name || this.user.email?.split('@')[0] || 'Player';
+                    await this.createUserStats(displayName, this.user.email);
+                    return;
+                }
+                throw error;
+            }
+            
+            this.userStats = data;
+            
+        } catch (error) {
+            console.error('Error loading user stats:', error);
+            // Fallback to defaults
+            this.userStats = {
+                balance: 1000,
+                games_played: 0,
+                wins: 0,
+                blackjacks: 0,
+                biggest_win: 0,
+                display_name: 'Player'
+            };
+        }
+    }
+    
+    async saveUserStats(stats) {
+        if (this.isGuest || !this.user) return;
+        
+        try {
+            const { error } = await supabase
+                .from('user_stats')
+                .update({
+                    balance: stats.balance,
+                    games_played: stats.gamesPlayed,
+                    wins: stats.wins,
+                    blackjacks: stats.blackjacks || this.userStats.blackjacks,
+                    biggest_win: Math.max(stats.lastWin || 0, this.userStats.biggest_win || 0),
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', this.user.id);
+            
+            if (error) throw error;
+            
+            // Update local cache
+            this.userStats.balance = stats.balance;
+            this.userStats.games_played = stats.gamesPlayed;
+            this.userStats.wins = stats.wins;
+            
+        } catch (error) {
+            console.error('Error saving user stats:', error);
+        }
+    }
+    
+    playAsGuest() {
+        this.isGuest = true;
+        this.user = null;
+        this.userStats = {
+            balance: 1000,
+            games_played: 0,
+            wins: 0,
+            blackjacks: 0,
+            biggest_win: 0,
+            display_name: 'Guest'
+        };
+        this.showGame();
+    }
+    
+    async handleLogout() {
+        try {
+            if (!this.isGuest) {
+                await supabase.auth.signOut();
+            }
+            
+            this.user = null;
+            this.isGuest = false;
+            this.userStats = null;
+            
+            // Reset forms
+            this.signinForm.reset();
+            this.signupForm.reset();
+            this.authError.textContent = '';
+            this.authError.style.color = '#ef4444';
+            
+            this.showAuth();
+            
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+    }
+    
+    showGame() {
+        this.authScreen.classList.add('hidden');
+        this.gameContainer.classList.remove('hidden');
+        
+        // Update user name display
+        const displayName = this.userStats?.display_name || 
+                           this.user?.user_metadata?.display_name || 
+                           (this.isGuest ? 'Guest' : 'Player');
+        this.userNameEl.textContent = displayName;
+        
+        // Initialize or reinitialize the game
+        if (window.game) {
+            window.game.loadFromAuth(this.userStats);
+        } else {
+            window.game = new BlackjackGame(this);
+        }
+    }
+    
+    showAuth() {
+        this.authScreen.classList.remove('hidden');
+        this.gameContainer.classList.add('hidden');
+        
+        // Destroy game instance
+        window.game = null;
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BLACKJACK GAME
+// ═══════════════════════════════════════════════════════════════════════════
+
+class BlackjackGame {
+    constructor(authManager) {
+        this.authManager = authManager;
+        
         this.deck = [];
         this.playerHand = [];
         this.dealerHand = [];
         this.playerValue = 0;
         this.dealerValue = 0;
-        this.balance = 1000;
         this.currentBet = 0;
         this.previousBet = 0;
-        this.gamesPlayed = 0;
-        this.wins = 0;
         this.gameInProgress = false;
         this.playerStood = false;
         this.dealerCardHidden = false;
+        this.lastWin = 0;
+
+        // Load stats from auth
+        const stats = authManager.userStats || {};
+        this.balance = stats.balance || 1000;
+        this.gamesPlayed = stats.games_played || 0;
+        this.wins = stats.wins || 0;
+        this.blackjacks = stats.blackjacks || 0;
 
         // Card suits and values
         this.suits = ['♠', '♥', '♦', '♣'];
@@ -37,6 +351,16 @@ class BlackjackGame {
         this.doubleBtn = document.getElementById('double');
 
         this.init();
+    }
+    
+    loadFromAuth(stats) {
+        if (!stats) return;
+        
+        this.balance = stats.balance || 1000;
+        this.gamesPlayed = stats.games_played || 0;
+        this.wins = stats.wins || 0;
+        this.blackjacks = stats.blackjacks || 0;
+        this.updateDisplay();
     }
 
     init() {
@@ -109,7 +433,6 @@ class BlackjackGame {
             }
         }
 
-        // Handle aces (soft 17)
         while (value > 21 && aces > 0) {
             value -= 10;
             aces--;
@@ -123,9 +446,7 @@ class BlackjackGame {
         cardEl.className = `card ${card.isRed ? 'red' : 'black'}`;
 
         if (hidden) {
-            cardEl.innerHTML = `
-                <div class="card-back"></div>
-            `;
+            cardEl.innerHTML = `<div class="card-back"></div>`;
             cardEl.classList.add('hidden-card');
         } else {
             cardEl.innerHTML = `
@@ -148,7 +469,6 @@ class BlackjackGame {
         const cardEl = this.createCardElement(card, hidden);
         container.appendChild(cardEl);
 
-        // Add dealing animation
         setTimeout(() => {
             cardEl.classList.add('visible', 'dealing');
         }, 100);
@@ -175,7 +495,6 @@ class BlackjackGame {
 
         this.playerValueEl.textContent = this.playerValue;
         
-        // Only show the first card's value when dealer has a hidden card
         if (this.dealerCardHidden && this.dealerHand.length >= 1) {
             const visibleValue = this.calculateHandValue([this.dealerHand[0]]);
             this.dealerValueEl.textContent = visibleValue;
@@ -214,11 +533,9 @@ class BlackjackGame {
             return;
         }
 
-        // Return current bet to balance first
         this.balance += this.currentBet;
         this.currentBet = 0;
 
-        // Place previous bet amount (or max available)
         const betAmount = Math.min(this.previousBet, this.balance);
         if (betAmount > 0) {
             this.currentBet = betAmount;
@@ -233,7 +550,6 @@ class BlackjackGame {
     maxBet() {
         if (this.gameInProgress) return;
         
-        // Add all remaining balance to current bet
         if (this.balance > 0) {
             this.currentBet += this.balance;
             this.balance = 0;
@@ -254,15 +570,12 @@ class BlackjackGame {
 
         if (this.gameInProgress) return;
 
-        // Save current bet as previous bet for rebet feature
         this.previousBet = this.currentBet;
-        
         this.gameInProgress = true;
         this.gamesPlayed++;
         this.clearHands();
         this.createDeck();
 
-        // Deal initial cards
         setTimeout(() => this.dealCard(this.playerHand, this.playerHandEl), 200);
         setTimeout(() => this.dealCard(this.dealerHand, this.dealerHandEl), 600);
         setTimeout(() => this.dealCard(this.playerHand, this.playerHandEl), 1000);
@@ -274,7 +587,6 @@ class BlackjackGame {
         setTimeout(() => {
             this.updateHandValues();
             this.checkInitialBlackjack();
-            // Only show game controls if game wasn't ended by blackjack
             if (this.gameInProgress) {
                 this.showGameControls();
             }
@@ -361,22 +673,17 @@ class BlackjackGame {
     }
 
     playDealer() {
-        // Recalculate dealer value fresh to avoid any stale data
         this.dealerValue = this.calculateHandValue(this.dealerHand);
         this.dealerValueEl.textContent = this.dealerValue;
 
         const dealerPlay = () => {
-            // Recalculate each time to ensure accuracy
             const currentDealerValue = this.calculateHandValue(this.dealerHand);
             this.dealerValue = currentDealerValue;
             this.dealerValueEl.textContent = currentDealerValue;
             
-            // Dealer must stand on 17 or higher
             if (currentDealerValue >= 17) {
-                // Dealer stands on 17+
                 this.determineWinner();
             } else {
-                // Dealer hits on 16 or less
                 setTimeout(() => {
                     this.dealCard(this.dealerHand, this.dealerHandEl);
                     setTimeout(dealerPlay, 800);
@@ -384,7 +691,6 @@ class BlackjackGame {
             }
         };
 
-        // Start dealer play after a short delay
         setTimeout(dealerPlay, 300);
     }
 
@@ -412,16 +718,21 @@ class BlackjackGame {
         this.hideGameControls();
 
         let payout = 0;
+        this.lastWin = 0;
+        
         switch (result) {
             case 'win':
                 payout = this.currentBet * 2;
+                this.lastWin = this.currentBet;
                 this.balance += payout;
                 this.wins++;
                 break;
             case 'blackjack':
                 payout = Math.floor(this.currentBet * 2.5);
+                this.lastWin = payout - this.currentBet;
                 this.balance += payout;
                 this.wins++;
+                this.blackjacks++;
                 break;
             case 'push':
                 payout = this.currentBet;
@@ -434,33 +745,42 @@ class BlackjackGame {
 
         this.currentBet = 0;
         this.updateDisplay();
+        
+        // Save to database
+        this.saveStats();
 
-        // Add visual effects
+        // Visual effects
+        const gameContainer = document.getElementById('game-container');
         if (result === 'win' || result === 'blackjack') {
-            document.querySelector('.game-container').classList.add('win-glow');
-            setTimeout(() => {
-                document.querySelector('.game-container').classList.remove('win-glow');
-            }, 2000);
+            gameContainer.classList.add('win-glow');
+            setTimeout(() => gameContainer.classList.remove('win-glow'), 2000);
         } else if (result === 'lose') {
-            document.querySelector('.game-container').classList.add('lose-shake');
-            setTimeout(() => {
-                document.querySelector('.game-container').classList.remove('lose-shake');
-            }, 500);
+            gameContainer.classList.add('lose-shake');
+            setTimeout(() => gameContainer.classList.remove('lose-shake'), 500);
         }
 
-        // Auto-clear after delay
         setTimeout(() => {
             this.showMessage('Place your bet to play again!');
         }, 3000);
     }
+    
+    async saveStats() {
+        if (this.authManager) {
+            await this.authManager.saveUserStats({
+                balance: this.balance,
+                gamesPlayed: this.gamesPlayed,
+                wins: this.wins,
+                blackjacks: this.blackjacks,
+                lastWin: this.lastWin
+            });
+        }
+    }
 
     showGameControls() {
-        // Hide betting controls, show game controls
         this.betControlsEl.classList.add('hidden');
         this.gameControlsEl.classList.add('active');
         this.chipRackEl.classList.add('disabled');
 
-        // Show/hide double down option based on conditions
         if (this.playerHand.length === 2 && this.balance >= this.currentBet) {
             this.doubleBtn.style.visibility = 'visible';
         } else {
@@ -469,7 +789,6 @@ class BlackjackGame {
     }
 
     hideGameControls() {
-        // Show betting controls, hide game controls
         this.betControlsEl.classList.remove('hidden');
         this.gameControlsEl.classList.remove('active');
         this.chipRackEl.classList.remove('disabled');
@@ -487,7 +806,10 @@ class BlackjackGame {
     }
 }
 
-// Initialize the game when the page loads
+// ═══════════════════════════════════════════════════════════════════════════
+// INITIALIZE
+// ═══════════════════════════════════════════════════════════════════════════
+
 document.addEventListener('DOMContentLoaded', () => {
-    new BlackjackGame();
+    window.authManager = new AuthManager();
 });
