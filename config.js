@@ -1,4 +1,4 @@
 // Supabase Configuration
 const SUPABASE_URL = 'https://hdweingmnknbueehobls.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_lTGfw6vmQKp05yiqIzw5cw_DRUWufP8';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhkd2VpbmdtbmtuYnVlZWhvYmxzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY3ODQzNTEsImV4cCI6MjA4MjM2MDM1MX0.2J2tMgDqjaeywkjejtvF640kivEO7VpQMzfKtfD8u5I';
 
