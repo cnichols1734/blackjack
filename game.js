@@ -30,6 +30,8 @@ class BlackjackGame {
         this.playerValueEl = document.getElementById('player-value');
         this.dealerValueEl = document.getElementById('dealer-value');
         this.gameControlsEl = document.getElementById('game-controls');
+        this.betControlsEl = document.getElementById('bet-controls');
+        this.chipRackEl = document.querySelector('.chip-rack');
         this.hitBtn = document.getElementById('hit');
         this.standBtn = document.getElementById('stand');
         this.doubleBtn = document.getElementById('double');
@@ -450,18 +452,24 @@ class BlackjackGame {
     }
 
     showGameControls() {
-        this.gameControlsEl.style.display = 'flex';
+        // Hide betting controls, show game controls
+        this.betControlsEl.classList.add('hidden');
+        this.gameControlsEl.classList.add('active');
+        this.chipRackEl.classList.add('disabled');
 
-        // Show double down option only on first two cards
+        // Show/hide double down option based on conditions
         if (this.playerHand.length === 2 && this.balance >= this.currentBet) {
-            this.doubleBtn.style.display = 'inline-block';
+            this.doubleBtn.style.visibility = 'visible';
         } else {
-            this.doubleBtn.style.display = 'none';
+            this.doubleBtn.style.visibility = 'hidden';
         }
     }
 
     hideGameControls() {
-        this.gameControlsEl.style.display = 'none';
+        // Show betting controls, hide game controls
+        this.betControlsEl.classList.remove('hidden');
+        this.gameControlsEl.classList.remove('active');
+        this.chipRackEl.classList.remove('disabled');
     }
 
     showMessage(message) {

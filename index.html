@@ -48,8 +48,9 @@
             </div>
         </div>
 
-        <!-- Betting Chips -->
-        <div class="betting-section">
+        <!-- Unified Controls Section -->
+        <div class="controls-section">
+            <!-- Chip Rack (always visible) -->
             <div class="chip-rack">
                 <button class="chip chip-5" data-value="5">$5</button>
                 <button class="chip chip-10" data-value="10">$10</button>
@@ -57,19 +58,24 @@
                 <button class="chip chip-50" data-value="50">$50</button>
                 <button class="chip chip-100" data-value="100">$100</button>
             </div>
-            <div class="bet-controls">
-                <button class="control-btn pixel-btn" id="clear-bet">CLEAR</button>
-                <button class="control-btn pixel-btn" id="rebet">REBET</button>
-                <button class="control-btn pixel-btn" id="max-bet">MAX</button>
-                <button class="control-btn pixel-btn" id="deal">DEAL</button>
-            </div>
-        </div>
+            
+            <!-- Button Container (fixed height, swaps content) -->
+            <div class="button-container">
+                <!-- Betting Controls -->
+                <div class="bet-controls" id="bet-controls">
+                    <button class="control-btn pixel-btn" id="clear-bet">CLEAR</button>
+                    <button class="control-btn pixel-btn" id="rebet">REBET</button>
+                    <button class="control-btn pixel-btn" id="max-bet">MAX</button>
+                    <button class="control-btn pixel-btn" id="deal">DEAL</button>
+                </div>
 
-        <!-- Game Action Buttons -->
-        <div class="game-controls" id="game-controls" style="display: none;">
-            <button class="action-btn pixel-btn" id="hit">HIT</button>
-            <button class="action-btn pixel-btn" id="stand">STAND</button>
-            <button class="action-btn pixel-btn" id="double" style="display: none;">DOUBLE</button>
+                <!-- Game Action Buttons -->
+                <div class="game-controls" id="game-controls">
+                    <button class="action-btn pixel-btn" id="hit">HIT</button>
+                    <button class="action-btn pixel-btn" id="stand">STAND</button>
+                    <button class="action-btn pixel-btn" id="double">DOUBLE</button>
+                </div>
+            </div>
         </div>
 
         <!-- Rules Toggle -->
