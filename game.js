@@ -4,7 +4,18 @@
 // SUPABASE CLIENT
 // ═══════════════════════════════════════════════════════════════════════════
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Supabase client - initialized after DOM loads
+let supabase = null;
+
+function initSupabase() {
+    // The CDN exposes supabase on window
+    if (window.supabase && window.supabase.createClient) {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        return true;
+    }
+    console.error('Supabase SDK not loaded');
+    return false;
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // AUTH MANAGER
@@ -322,8 +333,8 @@ class BlackjackGame {
         this.dealerCardHidden = false;
         this.lastWin = 0;
 
-        // Load stats from auth
-        const stats = authManager.userStats || {};
+        // Load stats from auth (with safe fallbacks)
+        const stats = (authManager && authManager.userStats) ? authManager.userStats : {};
         this.balance = stats.balance || 1000;
         this.gamesPlayed = stats.games_played || 0;
         this.wins = stats.wins || 0;
@@ -588,7 +599,7 @@ class BlackjackGame {
             this.updateHandValues();
             this.checkInitialBlackjack();
             if (this.gameInProgress) {
-                this.showGameControls();
+            this.showGameControls();
             }
         }, 1600);
     }
@@ -745,7 +756,7 @@ class BlackjackGame {
 
         this.currentBet = 0;
         this.updateDisplay();
-        
+
         // Save to database
         this.saveStats();
 
@@ -811,5 +822,31 @@ class BlackjackGame {
 // ═══════════════════════════════════════════════════════════════════════════
 
 document.addEventListener('DOMContentLoaded', () => {
-    window.authManager = new AuthManager();
+    // Initialize Supabase
+    if (initSupabase()) {
+        window.authManager = new AuthManager();
+    } else {
+        // Fallback: start as guest if Supabase fails to load
+        console.warn('Starting in guest mode - Supabase not available');
+        const authScreen = document.getElementById('auth-screen');
+        const gameContainer = document.getElementById('game-container');
+        
+        if (authScreen) authScreen.classList.add('hidden');
+        if (gameContainer) gameContainer.classList.remove('hidden');
+        
+        // Create a mock auth manager for guest mode
+        const guestAuth = {
+            userStats: {
+                balance: 1000,
+                games_played: 0,
+                wins: 0,
+                blackjacks: 0,
+                display_name: 'Guest'
+            },
+            isGuest: true,
+            saveUserStats: async () => {} // No-op for guest mode
+        };
+        
+        window.game = new BlackjackGame(guestAuth);
+    }
 });
