@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PIXEL BLACKJACK ♠ Arcade Casino</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🃏</text></svg>">
+</head>
+<body>
+    <div class="game-container">
+        <!-- Header with neon-style title -->
+        <div class="header">
+            <h1 class="pixel-text">PIXEL BLACKJACK</h1>
+            <div class="stats">
+                <div class="stat-item pixel-text">💰 $<span id="balance">1000</span></div>
+                <div class="stat-item pixel-text">🎮 <span id="games-played">0</span></div>
+                <div class="stat-item pixel-text">🏆 <span id="wins">0</span></div>
+            </div>
+        </div>
+
+        <!-- Casino Table -->
+        <div class="table">
+            <!-- Dealer's Area -->
+            <div class="dealer-section">
+                <div class="player-label pixel-text">DEALER</div>
+                <div class="hand" id="dealer-hand">
+                    <div class="card-placeholder"></div>
+                    <div class="card-placeholder"></div>
+                </div>
+                <div class="hand-value pixel-text" id="dealer-value">0</div>
+            </div>
+
+            <!-- Game Status -->
+            <div class="game-messages">
+                <div class="message pixel-text" id="game-message">PLACE YOUR BET!</div>
+                <div class="bet-display pixel-text" id="current-bet">BET: $0</div>
+            </div>
+
+            <!-- Player's Area -->
+            <div class="player-section">
+                <div class="player-label pixel-text">PLAYER</div>
+                <div class="hand" id="player-hand">
+                    <div class="card-placeholder"></div>
+                    <div class="card-placeholder"></div>
+                </div>
+                <div class="hand-value pixel-text" id="player-value">0</div>
+            </div>
+        </div>
+
+        <!-- Betting Chips -->
+        <div class="betting-section">
+            <div class="chip-rack">
+                <button class="chip chip-5" data-value="5">$5</button>
+                <button class="chip chip-10" data-value="10">$10</button>
+                <button class="chip chip-25" data-value="25">$25</button>
+                <button class="chip chip-50" data-value="50">$50</button>
+                <button class="chip chip-100" data-value="100">$100</button>
+            </div>
+            <div class="bet-controls">
+                <button class="control-btn pixel-btn" id="clear-bet">CLEAR</button>
+                <button class="control-btn pixel-btn" id="rebet">REBET</button>
+                <button class="control-btn pixel-btn" id="max-bet">MAX</button>
+                <button class="control-btn pixel-btn" id="deal">DEAL</button>
+            </div>
+        </div>
+
+        <!-- Game Action Buttons -->
+        <div class="game-controls" id="game-controls" style="display: none;">
+            <button class="action-btn pixel-btn" id="hit">HIT</button>
+            <button class="action-btn pixel-btn" id="stand">STAND</button>
+            <button class="action-btn pixel-btn" id="double" style="display: none;">DOUBLE</button>
+        </div>
+
+        <!-- Rules Toggle -->
+        <div class="rules-toggle">
+            <button class="pixel-btn" id="toggle-rules">? RULES</button>
+        </div>
+
+        <!-- Rules Panel -->
+        <div class="rules-panel" id="rules-panel" style="display: none;">
+            <h3 class="pixel-text">♠ BLACKJACK RULES ♠</h3>
+            <ul class="pixel-text">
+                <li>Beat the dealer's hand without going over 21</li>
+                <li>Face cards (J, Q, K) are worth 10 points</li>
+                <li>Aces are worth 1 or 11 points</li>
+                <li>Dealer must hit on 16 and stand on 17</li>
+                <li>Blackjack (21 with 2 cards) pays 3:2</li>
+                <li>Double down doubles your bet for one more card</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
