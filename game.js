@@ -335,6 +335,9 @@ class AuthManager {
 // BLACKJACK GAME
 // ═══════════════════════════════════════════════════════════════════════════
 
+// Track if game event listeners have been set up (prevents duplicates)
+let gameListenersInitialized = false;
+
 class BlackjackGame {
     constructor(authManager) {
         this.authManager = authManager;
@@ -383,13 +386,37 @@ class BlackjackGame {
     }
     
     loadFromAuth(stats) {
-        if (!stats) return;
+        // Reset game state completely
+        this.deck = [];
+        this.playerHand = [];
+        this.dealerHand = [];
+        this.playerValue = 0;
+        this.dealerValue = 0;
+        this.currentBet = 0;
+        this.previousBet = 0;
+        this.gameInProgress = false;
+        this.playerStood = false;
+        this.dealerCardHidden = false;
+        this.lastWin = 0;
         
-        this.balance = stats.balance || 1000;
-        this.gamesPlayed = stats.games_played || 0;
-        this.wins = stats.wins || 0;
-        this.blackjacks = stats.blackjacks || 0;
+        // Load stats
+        if (stats) {
+            this.balance = stats.balance || 1000;
+            this.gamesPlayed = stats.games_played || 0;
+            this.wins = stats.wins || 0;
+            this.blackjacks = stats.blackjacks || 0;
+        } else {
+            this.balance = 1000;
+            this.gamesPlayed = 0;
+            this.wins = 0;
+            this.blackjacks = 0;
+        }
+        
+        // Reset UI
+        this.clearHands();
+        this.hideGameControls();
         this.updateDisplay();
+        this.showMessage('Place your bet to start!');
     }
 
     init() {
@@ -399,19 +426,41 @@ class BlackjackGame {
     }
 
     setupEventListeners() {
+        // Prevent duplicate event listeners
+        if (gameListenersInitialized) {
+            return;
+        }
+        gameListenersInitialized = true;
+
         // Chip buttons
         document.querySelectorAll('.chip').forEach(chip => {
-            chip.addEventListener('click', () => this.addBet(parseInt(chip.dataset.value)));
+            chip.addEventListener('click', () => {
+                if (window.game) window.game.addBet(parseInt(chip.dataset.value));
+            });
         });
 
         // Control buttons
-        document.getElementById('clear-bet').addEventListener('click', () => this.clearBet());
-        document.getElementById('rebet').addEventListener('click', () => this.rebet());
-        document.getElementById('max-bet').addEventListener('click', () => this.maxBet());
-        document.getElementById('deal').addEventListener('click', () => this.deal());
-        document.getElementById('hit').addEventListener('click', () => this.hit());
-        document.getElementById('stand').addEventListener('click', () => this.stand());
-        document.getElementById('double').addEventListener('click', () => this.doubleDown());
+        document.getElementById('clear-bet').addEventListener('click', () => {
+            if (window.game) window.game.clearBet();
+        });
+        document.getElementById('rebet').addEventListener('click', () => {
+            if (window.game) window.game.rebet();
+        });
+        document.getElementById('max-bet').addEventListener('click', () => {
+            if (window.game) window.game.maxBet();
+        });
+        document.getElementById('deal').addEventListener('click', () => {
+            if (window.game) window.game.deal();
+        });
+        document.getElementById('hit').addEventListener('click', () => {
+            if (window.game) window.game.hit();
+        });
+        document.getElementById('stand').addEventListener('click', () => {
+            if (window.game) window.game.stand();
+        });
+        document.getElementById('double').addEventListener('click', () => {
+            if (window.game) window.game.doubleDown();
+        });
 
         // Rules toggle
         document.getElementById('toggle-rules').addEventListener('click', () => {
