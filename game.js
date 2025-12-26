@@ -9,11 +9,29 @@ let supabase = null;
 
 function initSupabase() {
     // The CDN exposes supabase on window
-    if (window.supabase && window.supabase.createClient) {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        return true;
+    // Try different access patterns for the Supabase library
+    let createClientFn = null;
+    
+    if (typeof window.supabase !== 'undefined') {
+        if (typeof window.supabase.createClient === 'function') {
+            createClientFn = window.supabase.createClient;
+        } else if (typeof window.supabase.default?.createClient === 'function') {
+            createClientFn = window.supabase.default.createClient;
+        }
     }
-    console.error('Supabase SDK not loaded');
+    
+    if (createClientFn) {
+        try {
+            supabase = createClientFn(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('Supabase initialized successfully');
+            return true;
+        } catch (e) {
+            console.error('Supabase init error:', e);
+            return false;
+        }
+    }
+    
+    console.error('Supabase SDK not loaded. window.supabase =', typeof window.supabase);
     return false;
 }
 
@@ -821,8 +839,7 @@ class BlackjackGame {
 // INITIALIZE
 // ═══════════════════════════════════════════════════════════════════════════
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Initialize Supabase
+function startApp() {
     if (initSupabase()) {
         window.authManager = new AuthManager();
     } else {
@@ -848,5 +865,27 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         
         window.game = new BlackjackGame(guestAuth);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Try immediately
+    if (typeof window.supabase !== 'undefined') {
+        startApp();
+    } else {
+        // Wait a bit for the script to load
+        let attempts = 0;
+        const maxAttempts = 20;
+        const interval = setInterval(() => {
+            attempts++;
+            if (typeof window.supabase !== 'undefined') {
+                clearInterval(interval);
+                startApp();
+            } else if (attempts >= maxAttempts) {
+                clearInterval(interval);
+                console.warn('Supabase failed to load after waiting');
+                startApp(); // Will fall back to guest mode
+            }
+        }, 100);
     }
 });
