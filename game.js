@@ -274,7 +274,10 @@ class BlackjackGame {
         setTimeout(() => {
             this.updateHandValues();
             this.checkInitialBlackjack();
-            this.showGameControls();
+            // Only show game controls if game wasn't ended by blackjack
+            if (this.gameInProgress) {
+                this.showGameControls();
+            }
         }, 1600);
     }
 
